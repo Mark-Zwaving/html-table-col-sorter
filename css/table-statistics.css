@@ -1,0 +1,44 @@
+* {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+body { color: black; font: normal normal normal 0.9rem/1rem Calibri; }
+table { margin: 1rem auto; border-spacing: 4px; border-collapse: separate; }
+th { padding: 3px; text-transform: uppercase; }
+td { padding: 1px 4px; }
+thead tr:first-child th {
+	color: #eeeeee; background: #777777;
+	font-size: 1rem;
+	text-transform: uppercase;
+}
+td:nth-child(1), td:nth-child(2) { font-style: italic }
+td:nth-child(n+3) { text-align: center; }
+tr:nth-child(odd) { background: #eeeeee; }
+tr:nth-child(even) { background: #dddddd; }
+tr:hover { background:beige; font-weight:bold }
+td:hover { font-weight:bold; cursor: pointer; color: green }
+.popup {
+	position: absolute;
+	display: inline-block;
+	background: #777777;
+	transition: opacity 500ms;
+	visibility: hidden;
+	opacity: 0;
+	box-shadow: 0px 0px 2px 1px gray;
+	border-spacing: 2px;
+}
+.popup th { padding: 1px 3px 0px 3px; }
+.popup td {
+	color: black; font-style: normal; font-weight: normal;
+	text-align: center; padding: 1px 2px 1px 2px;
+}
+td:hover .popup { visibility: visible; opacity: 1; }
+tfoot tr td {
+	font-size: 0.8rem;
+	color: #cccccc; background: none;
+	text-transform: lowercase;
+	font-style: italic;
+}
+tfoot tr td:hover { font-weight: normal; text-decoration: none; cursor: cursor; }
+sub { font-size: 0.5rem; }
