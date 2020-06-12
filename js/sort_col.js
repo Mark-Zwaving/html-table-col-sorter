@@ -1,8 +1,9 @@
 /**
- * Functions for sorting table columns
+ * Functions for sorting html table columns
  *
  * @author   M.Zwaving
- * @license  Public Domain
+ * @license  MIT-license
+ * @version  0.1.0
  */
 'use strict';
 console.log('JS loading...');
