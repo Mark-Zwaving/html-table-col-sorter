@@ -6,16 +6,21 @@
  * @version  0.1.0
  */
 'use strict';
-console.log('JS loading...');
+console.log('JS col sort loading...');
 
-let table_selector = 'table > tbody',  // Locations of the tr with data
-    descending     = '+',   // Identifier sort direction: large to small
-    ascending      = '-',   // Identifier sort direction: small to high
-    sort_num       = 'num', // Identifier sort num-based
-    sort_txt       = 'txt', // Identifier sort txt-based
-    row_nr         = 2,     // Row tr num for click to sort
-    css_click_cell = 'cursor: cell;',  // Extra css for click cell
-    abs_min        = -99999999.9,  // minimum digit for testing against maximum values
+let table_tbody      =  'table#stats>tbody',
+    table_stats_sel  =  'table#stats>tbody>tr',  // Locations of the tr with data
+    table_popup_sel  =  'table#stats>tbody>tr>td>table.popup', // Popup table
+    descending       =  '+',   // Identifier sort direction: large to small
+    ascending        =  '-',   // Identifier sort direction: small to high
+    sort_num         =  'num', // Identifier sort num-based
+    sort_txt         =  'txt', // Identifier sort txt-based
+    row_nr           =  2,     // Row tr num for click to sort
+    css_click_cell   =  'cursor: cell;',  // Extra css for click cell
+    abs_min          =  -99999999.9,  // Minimum digit for testing against maximum values
+    abs_max          =   99999999.9,  // Max digit
+    separator        =  '<span></span>',
+    no_data_given    =  '...',  // Dummy value from weatherstats.
 
     // Reg expression for grepping a float number from a td cell.
     // Result float is used for numeric sorting in a td cell.
@@ -24,9 +29,9 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
 
     // Function get selectors to make columns clickable for sorting
     // Update here the selector for other tables
-    selector = ( row, col ) => {
+    click_selector = ( row, col ) => {
         return document.querySelector (
-                `table>thead>tr:nth-child(${row})>th:nth-child(${col})`
+            `table#stats>thead>tr:nth-child(${row})>th:nth-child(${col})`
         );
     },
 
@@ -35,7 +40,7 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
     obj = ( name, type, dir, row, col ) => {
         return {
             name: name,
-            doc: selector( row, col ),
+            doc: click_selector( row, col ),
             type: type, // Num or txt
             dir: dir,
             row: row,
@@ -43,11 +48,6 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
         }
     },
 
-    // All weather entities objects for the specific columns
-    // For different table structures change row num and col num for example
-    // Give a name and a starting sort direction: ascending or descending  ?
-    // See selector for updating the query selector
-    // obj( name, type-sort (sort_num or sort_txt), sort-direction, row_nr (tr), col_nr (td) );
     enti = {
         PLACE:     obj( 'PLACE',    sort_txt,  ascending,   row_nr,   1 ),
         PROVINCE:  obj( 'PROVINCE', sort_txt,  ascending,   row_nr,   2 ),
@@ -65,12 +65,17 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
         TNlt_20:   obj( 'TNlt_20',  sort_num,  descending,  row_nr,  15 )
     },
 
-
     ////////////////////////////////////////////////////////////////////////////
-    // Grep a float from a string. Needed for coreect sorting
+    // Grep a float from a string. Needed for correct sorting
     grep_float = el => {
-        let fl = el.match( reg_float );
-        return parseFloat( fl, 10 );
+        let fl = abs_min; // This value will alway be lowest
+        el = el.trim()
+        if ( el != no_data_given ) {
+            try {
+                fl = parseFloat(el.match( reg_float ), 10); // Match a float digit
+            } catch (error) { }
+        }
+        return fl;
     },
 
     // Function updates the sort direction for a given object
@@ -79,64 +84,63 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
     },
 
     // Function gets a DOM object with all the rows in the selected table
-    read_dom_tr = selector => {
-        return document.querySelector(selector).getElementsByTagName('tr');
+    read_dom = selector => {
+        // Do not add the tr from the popup table
+        return document.querySelectorAll(selector);
     },
 
-    // Function sets the values of a matrix (2d array) in een text 'array'
+    // Function deletes a DOM object with all the rows in the selected table
+    delete_dom = selector => {
+        let nodelist = document.querySelectorAll(selector);
+        nodelist.forEach((nodelist, node) => {
+          while (node.hasChildNodes())
+              node.removeChild(node.lastChild);
+        });
+    },
+
+    // Function sets the values of a matrix (2d array) to text
     txt_matrix = matrix => {
-        let txt = '\n[\n'
-        for ( let x = 0, lx = matrix.length; x < lx; x ++ )
-        {
+        let txt = '\n[\n';
+        matrix.forEach( ( row, i ) => {
             txt += ' [ ';
-            for ( let y = 0, ly = matrix[x].length; y < ly; y++ )
-                txt += `${matrix[y]}, `;
+            row.forEach( ( item, i ) => txt += `${item}, ` );
             txt += ' ]\n';
-        }
+        } );
         txt += '];\n';
 
         return txt;
     },
 
-    // Function reads al the data from een tr DOM object into an 2d array/matrix
-    read_table_in_matrix = tr => {
+    // Function reads al the data from an tr DOM object into an 2d array/matrix
+    read_matrix = tr => {
+        let matrix = [];
+        tr.forEach( (row, i) => {
+            let tds = [];
+            row.querySelectorAll('.val').forEach( (val, i) => {   // Get values
+                 let td = val.innerHTML.replace(/\s+/g,'') // Remove \s
+                 tds.push(td);
+            } );
+            matrix.push(tds);
+        } );
 
-       let row = 0, len = tr.length, matrix = [];
-
-       while ( row < len )
-       {
-           let tds = [], cols = tr[row].getElementsByTagName('td'),
-               col = 0, max = cols.length;
-            while ( col < max )
-            {
-               tds.push(cols[col].innerHTML);
-               col += 1;
-            }
-           matrix.push(tds);
-           row += 1;
-       }
-
-       return matrix;
+        return matrix;
     },
 
     // Function reads all the column values from the weather object into a list
-    list_col_from_matrix = (matrix, obj) => {
-        let cols = [];
-        for ( let row = 0, len = matrix.length; row < len; row++ )
-              cols.push( matrix[row][obj.col-1] )
+    list_col_from_matrix = ( matrix, obj ) => {
+        let cols = [], ndx = obj.col - 1;
+        matrix.forEach( (row, i) => cols.push(row[ndx]) );
 
         return cols;
     },
 
     // Function gets a maximum value and his key from a list
     max_from_list = l => {
-
         let max = abs_min, key = 0;
-        for ( let i = 0, len = l.length; i < len; i++ )
-            if (l[i] > max) {
-              max = l[i];
-              key = i;
-            }
+        l.forEach( (item, i) => {
+            if (item > max)
+                max = item, key = i;
+        } );
 
         return { val: max, key: key };
     },
@@ -144,50 +148,50 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
     // Function gets the numeric sorted key list with values
     num_sort_keys_col = (col_list, obj) => {
 
-         let len = col_list.length, keys = [];
+        let len = col_list.length, keys = [];
 
          // Replace all non-numeric values in col_list
-         for ( let i = 0; i < len; i++ )
-            col_list[i] = grep_float( col_list[i] );  // Oke
+        col_list.forEach(
+            (item, i) => col_list[i] = grep_float(item)
+        );
 
-         while ( --len !== -1 )
-         {
+        while ( --len !== -1 )
+        {
             let max = max_from_list( col_list );  // Get max key
             col_list.splice( max.key, 1, abs_min );  // Replace with minimum
             keys.push( max.key );  // Add max key row to keys
-         }
+        }
 
-         if ( obj.dir == ascending )
+        if ( obj.dir == ascending )
             keys.reverse()
 
-         return keys;
+        return keys;
     },
 
     // Function gets the txt sorted key list with values
-    // TODO
     txt_sort_keys_col = (col_list, obj) => {
+        let len = col_list.length, txt_keys = [], keys = [];
 
-         let len = col_list.length, txt_keys = [], keys = [];
+        // Make new array txt_keys with the text and their keys
+        col_list.forEach(
+            (item, i) => txt_keys.push({ txt : item, key : i })
+        );
 
-         // Make new array with the text and their keys
-         for ( let ndx = 0; ndx < len; ndx++ )
-            txt_keys.push( { txt : col_list[ndx], key : ndx } );
+        // Sort text only
+        txt_keys.sort( (a, b) => {
+            a = a.txt.toLowerCase();
+            b = b.txt.toLowerCase();
 
-         // Sort text only
-         txt_keys.sort( (a, b) => {
-              a = a.txt.toLowerCase();
-              b = b.txt.toLowerCase();
+            return a == b ? 0 : a < b ? -1 : 1;
+        } );
 
-              return a == b ? 0 : a < b ? -1 : 1;
-         } );
+        // Make keys only list
+        while ( --len !== -1 ) keys.push( txt_keys[len].key );
 
-         // Make keys only list
-         while ( --len !== -1 ) keys.push( txt_keys[len].key );
-
-         if ( obj.dir == ascending )
+        if ( obj.dir == ascending )
             keys.reverse()
 
-         return keys;
+        return keys;
     },
 
     // Function makes the sorted html (tr rows) based on the list with sorted keys.
@@ -195,28 +199,28 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
     html_sorted_list = (tr, sort_keys) => {
 
         let html = '', ndx = 0;  // Make new html tr rows based on sorted keys
-        sort_keys.forEach( el => {
-              html += `<tr>${tr.item(el).innerHTML}</tr>`;
-        } );
+        sort_keys.forEach(
+            el => html += `<tr>${tr.item(el).innerHTML}</tr>`
+        );
 
         return html;
     },
 
     // Function called after clicked on a table column title. Start sorting the clicked column.
-    event_click_num_sort = (selector, obj) => {
-        let tr        = read_dom_tr( selector ),  //  Get tr list DOM
-            matrix    = read_table_in_matrix( tr ),  // Read all values into matrix list
-            col_list  = list_col_from_matrix( matrix, obj );  // Get values col in list
+    event_click_num_sort = (obj) => {
+        let tr        =  read_dom( table_stats_sel ),
+            matrix    =  read_matrix( tr ),   // Read all values into matrix list
+            col_list  =  list_col_from_matrix( matrix, obj );  // Get values col in list
 
         // Get sorted keys list
         let sort_keys = [];
         if ( obj.type == sort_num )
             sort_keys = num_sort_keys_col( col_list, obj );
-        else if ( obj.type == sort_txt ) // TODO
+        else if ( obj.type == sort_txt )
             sort_keys = txt_sort_keys_col( col_list, obj );
 
         let html = html_sorted_list( tr, sort_keys );  // Get html tr sorted
-        document.querySelector( selector ).innerHTML = html;  // Write sorted tr to table/tbody
+        document.querySelector( table_tbody ).innerHTML = html;  // Write sorted tr to table/tbody
         update_sort_dir( obj );  // Update sort direction for next time
     },
 
@@ -225,11 +229,11 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
         //  Add events to table titles
         for ( var x in enti )
             if ( enti.hasOwnProperty(x) )
-                enti[x].doc.addEventListener (
-                        'click', (
-                          (sel,obj) => () => event_click_num_sort(sel, obj)
-                        ) (table_selector, enti[x]),
-                        false
+                enti[x].doc.addEventListener(
+                    'click', (
+                      ( obj ) => () => event_click_num_sort( obj )
+                    ) ( enti[x] ),
+                    false
                 );
     },
 
@@ -245,6 +249,6 @@ let table_selector = 'table > tbody',  // Locations of the tr with data
 //  After loading the page, add all events and css
 window.onload = (e) => {
     add_events_to_table();
-    add_css_to_table_titles();
+    add_css_to_table_titles(); // Add cursor to the cells
     console.log('JS loaded !');
 };
