@@ -3,7 +3,7 @@
  *
  * @author   M.Zwaving
  * @license  MIT-license
- * @version  0.1.0
+ * @version  0.0.9
  */
 'use strict';
 console.log('JS col sort loading...');
@@ -53,9 +53,9 @@ let table_tbody      =  'table#stats>tbody',
         PROVINCE:  obj( 'PROVINCE', sort_txt,  ascending,   row_nr,   2 ),
         TG:        obj( 'TG',       sort_num,  descending,  row_nr,   4 ),
         HELLMANN:  obj( 'HELLMANN', sort_num,  ascending,   row_nr,   5 ),
-        TX_MIN:    obj( 'TX_MIN',   sort_num,  descending,  row_nr,   6 ),
-        TG_MIN:	   obj( 'TG_MIN',   sort_num,  descending,  row_nr,   7 ),
-        TN_MIN:    obj( 'TN_MIN',   sort_num,  descending,  row_nr,   8 ),
+        TX_MIN:    obj( 'TX_MIN',   sort_num,  ascending,   row_nr,   6 ),
+        TG_MIN:	   obj( 'TG_MIN',   sort_num,  ascending,   row_nr,   7 ),
+        TN_MIN:    obj( 'TN_MIN',   sort_num,  ascending,   row_nr,   8 ),
         TXlt0:     obj( 'TXlt0',    sort_num,  descending,  row_nr,   9 ),
         TGlt0:     obj( 'TGlt0',    sort_num,  descending,  row_nr,  10 ),
         TNlt0:     obj( 'TNlt0',    sort_num,  descending,  row_nr,  11 ),
@@ -228,13 +228,12 @@ let table_tbody      =  'table#stats>tbody',
     add_events_to_table = () => {
         //  Add events to table titles
         for ( var x in enti )
-            if ( enti.hasOwnProperty(x) )
-                enti[x].doc.addEventListener(
+            enti[x].doc.addEventListener(
                     'click', (
                       ( obj ) => () => event_click_num_sort( obj )
                     ) ( enti[x] ),
                     false
-                );
+            );
     },
 
     // Function adds css to the clickable column titles in the table
@@ -242,8 +241,7 @@ let table_tbody      =  'table#stats>tbody',
       //  Add events to table titles
       let css = css_click_cell;
       for ( var x in enti )
-          if ( enti.hasOwnProperty(x) )
-              enti[x].doc.style = css;
+          enti[x].doc.style = css;
     };
 
 //  After loading the page, add all events and css
